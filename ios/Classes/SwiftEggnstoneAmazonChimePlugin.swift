@@ -2,10 +2,8 @@ import Flutter
 import UIKit
 import AmazonChimeSDK
 import AmazonChimeSDKMedia
-		
 
 public class SwiftEggnstoneAmazonChimePlugin: NSObject, FlutterPlugin {
-    
     var _meetingSession: MeetingSession?
     //var _applicationContext: Context?
     var _methodChannel: FlutterMethodChannel?
@@ -30,91 +28,25 @@ public class SwiftEggnstoneAmazonChimePlugin: NSObject, FlutterPlugin {
         print(call.method)
         
         switch call.method {
-        case "GetVersion": result("Amazon Chime Version currently unknown")
-        case "CreateMeetingSession": self.handleCreateMeetingSession(call: call, result: result)
-        case "AudioVideoStart": self.handleAudioVideoStart(result: result)
-        case "AudioVideoStop": self.handleAudioVideoStop(result: result)
-        case "AudioVideoStartLocalVideo": self.handleAudioVideoStartLocalVideo(result: result)
-        case "AudioVideoStopLocalVideo": self.handleAudioVideoStopLocalVideo(result: result)
-        case "AudioVideoStartRemoteVideo": self.handleAudioVideoStartRemoteVideo(result: result)
-        case "AudioVideoStopRemoteVideo": self.handleAudioVideoStopRemoteVideo(result: result)
-        case "BindVideoView": self.handleBindVideoView(call: call, result: result)
-        case "UnbindVideoView": self.handleUnbindVideoView(call: call, result: result)
-        case "Mute": self.handleMute(result: result)
-        case "Unmute": self.handleUnmute(result: result)
-        case "listAudioDevices": self.listAudioDevices(result: result)
-        case "chooseAudioDevice": self.chooseAudioDevice(call: call, result: result)
-            
-        default:result(FlutterMethodNotImplemented)
+            case "AudioVideoStart": self.handleAudioVideoStart(result: result)
+            case "AudioVideoStop": self.handleAudioVideoStop(result: result)
+            case "AudioVideoStartLocalVideo": self.handleAudioVideoStartLocalVideo(result: result)
+            case "AudioVideoStopLocalVideo": self.handleAudioVideoStopLocalVideo(result: result)
+            case "AudioVideoStartRemoteVideo": self.handleAudioVideoStartRemoteVideo(result: result)
+            case "AudioVideoStopRemoteVideo": self.handleAudioVideoStopRemoteVideo(result: result)
+            case "BindVideoView": self.handleBindVideoView(call: call, result: result)
+            case "ChooseAudioDevice": self.handleChooseAudioDevice(call: call, result: result)
+            case "CreateMeetingSession": self.handleCreateMeetingSession(call: call, result: result)
+            case "GetVersion": result("Amazon Chime Version currently unknown")
+            case "ListAudioDevices": self.handleListAudioDevices(result: result)
+            case "Mute": self.handleMute(result: result)
+            case "UnbindVideoView": self.handleUnbindVideoView(call: call, result: result)
+            case "Unmute": self.handleUnmute(result: result)
+
+            default:result(FlutterMethodNotImplemented)
         }
     }
-    
-    func chooseAudioDevice(call: FlutterMethodCall, result: @escaping FlutterResult) {
-        guard let args = call.arguments else {
-            result(FlutterError())
-            return
-        }
-        
-        if checkAudioVideoFacade(result: result, source: "chooseAudioDevice") == false {
-            return
-        }
-        
-        if let myArgs = args as? [String:Any],
-            let deviceName = myArgs["label"] as? String
-        {
-            if let device = _audioOutputs.first(where: {$0.label == deviceName}) {
-                _audioVideoFacade?.chooseAudioDevice(mediaDevice: device)
-                result("OK")
-            }
-            else {
-                result(FlutterError())
-            }
-        }
-    }
-    
-    func listAudioDevices(result: @escaping FlutterResult) {
-        if checkAudioVideoFacade(result: result, source: "listAudioDevices") == false {
-            return
-        }
-        do {
-            let concatenatedDevices : String
-            
-            let devices: [MediaDevice] = (_audioVideoFacade?.listAudioDevices())!
-            
-            self._audioOutputs.removeAll()
-            for device in devices {
-                self._audioOutputs.append(device)
-            }
-            
-            concatenatedDevices = "[" + devices.map({(device: MediaDevice) -> String in
-            return """
-                {
-"label": "\(device.label)",
-"type": "\(device.type)",
-"port": "\(device.port)",
-"description": "\(device.description)"
-                }
-"""
-                }).joined(separator: ",") + "]"
-            
-            result(concatenatedDevices)
-        }catch {
-            result(FlutterError())
-        }
-    }
-    
-//    func chooseAudioDevice(result: @escaping FlutterResult) {
-//        if checkAudioVideoFacade(result: result, source: "chooseAudioDevice") == false {
-//            return
-//        }
-//        do {
-//            try _audioVideoFacade?.chooseAudioDevice(mediaDevice: <#T##MediaDevice#>)()
-//            result("OK")
-//        }catch {
-//            result(FlutterError())
-//        }
-//    }
-    
+
     func handleCreateMeetingSession(call: FlutterMethodCall, result: @escaping FlutterResult) {
         guard let args = call.arguments else {
             result(FlutterError())
@@ -155,6 +87,8 @@ public class SwiftEggnstoneAmazonChimePlugin: NSObject, FlutterPlugin {
             _audioVideoFacade?.addDeviceChangeObserver(observer: ChimeDeviceChangeObserver(eventSink: eventSink))
             _audioVideoFacade?.addVideoTileObserver(observer: ChimeVideoTileObserver(eventSink: eventSink))
             
+            _audioVideoFacade?.addActiveSpeakerObserver(policy:  DefaultActiveSpeakerPolicy(speakerWeight: 0, cutoffThreshold: 0, takeoverRate: 0), observer: ChimeActiveSpeakerObserver(eventSink: eventSink))
+            
             result("OK")
         }
         else {
@@ -169,10 +103,11 @@ public class SwiftEggnstoneAmazonChimePlugin: NSObject, FlutterPlugin {
         do {
             try _audioVideoFacade?.start()
             result("OK")
-        }catch {
+        } catch {
             result(FlutterError())
         }
     }
+
     func handleAudioVideoStop(result: @escaping FlutterResult) {
         if checkAudioVideoFacade(result: result, source: "AudioVideoStop") == false {
             return
@@ -181,10 +116,11 @@ public class SwiftEggnstoneAmazonChimePlugin: NSObject, FlutterPlugin {
         do {
             _audioVideoFacade?.stop()
             result("OK")
-        }catch {
+        } catch {
             result(FlutterError())
         }
     }
+
     func handleAudioVideoStartLocalVideo(result: @escaping FlutterResult) {
         if checkAudioVideoFacade(result: result, source: "AudioVideoStartLocalVideo") == false{
             return
@@ -192,10 +128,11 @@ public class SwiftEggnstoneAmazonChimePlugin: NSObject, FlutterPlugin {
         do {
             try _audioVideoFacade?.startLocalVideo()
             result("OK")
-        }catch {
+        } catch {
             result(FlutterError())
         }
     }
+
     func handleAudioVideoStopLocalVideo(result: @escaping FlutterResult) {
         if checkAudioVideoFacade(result: result, source: "AudioVideoStopLocalVideo") == false {
             return
@@ -203,10 +140,11 @@ public class SwiftEggnstoneAmazonChimePlugin: NSObject, FlutterPlugin {
         do {
             try _audioVideoFacade?.stopLocalVideo()
             result("OK")
-        }catch {
+        } catch {
             result(FlutterError())
         }
     }
+
     func handleAudioVideoStartRemoteVideo(result: @escaping FlutterResult) {
         if checkAudioVideoFacade(result: result, source: "AudioVideoStartRemoteVideo") == false {
             return
@@ -214,10 +152,11 @@ public class SwiftEggnstoneAmazonChimePlugin: NSObject, FlutterPlugin {
         do {
             try _audioVideoFacade?.startRemoteVideo()
             result("OK")
-        }catch {
+        } catch {
             result(FlutterError())
         }
     }
+
     func handleAudioVideoStopRemoteVideo(result: @escaping FlutterResult) {
         if checkAudioVideoFacade(result: result, source: "AudioVideoStopRemoteVideo") == false {
             return
@@ -225,10 +164,11 @@ public class SwiftEggnstoneAmazonChimePlugin: NSObject, FlutterPlugin {
         do {
             try _audioVideoFacade?.stopRemoteVideo()
             result("OK")
-        }catch {
+        } catch {
             result(FlutterError())
         }
     }
+
     func handleBindVideoView(call: FlutterMethodCall, result: @escaping FlutterResult) {
         print("handleBindVideoView")
         if checkAudioVideoFacade(result: result, source: "BindVideoView") == false{
@@ -246,6 +186,7 @@ public class SwiftEggnstoneAmazonChimePlugin: NSObject, FlutterPlugin {
         }
         result("OK")
     }
+
     func handleUnbindVideoView(call: FlutterMethodCall, result: @escaping FlutterResult) {
         if checkAudioVideoFacade(result: result, source: "UnbindVideoView") == false {
             return
@@ -259,6 +200,71 @@ public class SwiftEggnstoneAmazonChimePlugin: NSObject, FlutterPlugin {
         }
         result("OK")
     }
+
+    func handleChooseAudioDevice(call: FlutterMethodCall, result: @escaping FlutterResult) {
+        guard let args = call.arguments else {
+            result(FlutterError())
+            return
+        }
+
+        if checkAudioVideoFacade(result: result, source: "ChooseAudioDevice") == false {
+            return
+        }
+
+        if let myArgs = args as? [String:Any],
+            let deviceName = myArgs["Label"] as? String {
+            if let device = _audioOutputs.first(where: {$0.label == deviceName}) {
+                _audioVideoFacade?.chooseAudioDevice(mediaDevice: device)
+                result("OK")
+            }
+            else {
+                result(FlutterError())
+            }
+        }
+    }
+
+    func handleListAudioDevices(result: @escaping FlutterResult) {
+        if checkAudioVideoFacade(result: result, source: "ListAudioDevices") == false {
+            return
+        }
+        do {
+            let concatenatedDevices : String
+
+            let devices: [MediaDevice] = (_audioVideoFacade?.listAudioDevices())!
+
+            self._audioOutputs.removeAll()
+            for device in devices {
+                self._audioOutputs.append(device)
+            }
+
+            concatenatedDevices = "[" + devices.map({(device: MediaDevice) -> String in
+            return """
+                {
+                "label": "\(device.label)",
+                "type": "\(device.type)",
+                "port": "\(device.port)",
+                "description": "\(device.description)"
+                }
+                """
+                }).joined(separator: ",") + "]"
+
+            result(concatenatedDevices)
+        } catch {
+            result(FlutterError())
+        }
+    }
+
+//    func chooseAudioDevice(result: @escaping FlutterResult) {
+//        if checkAudioVideoFacade(result: result, source: "ChooseAudioDevice") == false {
+//            return
+//        }
+//        do {
+//            try _audioVideoFacade?.chooseAudioDevice(mediaDevice: <#T##MediaDevice#>)()
+//            result("OK")
+//        } catch {
+//            result(FlutterError())
+//        }
+//    }
     
     func checkAudioVideoFacade(result: FlutterResult, source: String) -> Bool
     {
@@ -309,8 +315,7 @@ class ExampleStreamHandler: NSObject, FlutterStreamHandler {
     public func getEventSink() -> FlutterEventSink? {
         return _eventSink!
     }
-    
-    
+        
     func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
         print("ExampleStreamHandler onListen")
         _eventSink = events
@@ -322,5 +327,4 @@ class ExampleStreamHandler: NSObject, FlutterStreamHandler {
         print("ExampleStreamHandler onCancel")
         return nil
     }
-    
 }

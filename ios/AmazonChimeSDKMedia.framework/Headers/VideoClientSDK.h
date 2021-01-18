@@ -35,10 +35,11 @@
 @property (nonatomic, assign) BOOL isUsingSendSideBwe;
 @property (nonatomic, assign) BOOL isUsingPixelBufferRenderer;
 @property (nonatomic, assign) BOOL isUsingOptimizedTwoSimulcastStreamTable;
+@property (nonatomic, assign) BOOL isContentShare;
 @end
 
 @interface DataMessageInternal : NSObject
-@property (nonatomic, assign) long timestampMs;
+@property (nonatomic, assign) int64_t timestampMs;
 @property (atomic, strong, readonly) NSString* topic;
 @property (atomic, strong, readonly) NSData* data;
 @property (atomic, strong, readonly) NSString* senderAttendeeId;
@@ -47,6 +48,16 @@
 @end
 
 #define kMaximumSupportedVideoTiles 16
+
+@protocol VideoSinkInternal <NSObject>
+- (void)didReceivePixelBuffer:(CVPixelBufferRef)buffer timestampNs:(int64_t)timestampNs rotation:(VideoRotationInternal)rotation;
+@end
+
+@protocol VideoSourceInternal <NSObject>
+@property (atomic, assign) VideoContentHintInternal contentHint;
+- (void)addVideoSink:(NSObject<VideoSinkInternal>*) sink;
+- (void)removeVideoSink:(NSObject<VideoSinkInternal>*) sink;
+@end
 
 #pragma clang diagnostic push
 // To get rid of 'No protocol definition found' warnings for adapter delegate
@@ -104,6 +115,9 @@
 - (void)sendDataMessage:(NSString*)topic
                    data:(const char*)data
              lifetimeMs:(int)lifetimeMs;
+
+- (void)setExternalVideoSource:(NSObject<VideoSourceInternal>*)source;
+
 @end
 
 // All of these callbacks occur on the main thread
@@ -122,6 +136,13 @@
                profileId:(NSString*)profileId
               pauseState:(PauseState)pauseState
                  videoId:(uint32_t)videoId;
+
+- (void)didReceiveBuffer:(CVPixelBufferRef)buffer
+               profileId:(NSString*)profileId
+              pauseState:(PauseState)pauseState
+                 videoId:(uint32_t)videoId
+             timestampNs:(int64_t)timestampNs
+                rotation:(VideoRotationInternal)rotation;
 
 - (void)videoClient:(VideoClient*)client didUpdateNumberOfTracks:(NSArray*)tracks;
 
@@ -142,7 +163,7 @@
 
 - (void)videoClientMetricsReceived:(NSDictionary*)metrics;
 
-- (void)videoClientDataMessageReceived:(NSArray<DataMessageInternal*>* _Nonnull )message;
+- (void)videoClientDataMessageReceived:(NSArray<DataMessageInternal*>*)message;
 @end
 
 #endif /* VideoClient_sdk_h */

@@ -2,7 +2,7 @@
 //  ChimeVideoTileObserver.swift
 //  eggnstone_amazon_chime
 //
-//  Created by Hendrik Lakämper on 30.07.20.
+//  Created by Hendrik Lakämper on 30.07.2020
 //
 
 import Foundation
@@ -17,14 +17,12 @@ public class ChimeVideoTileObserver : VideoTileObserver {
     }
     
     public func videoTileDidAdd(tileState: VideoTileState) {
-        //"Name": "OnVideoTileDidAdd",
         let json = """
         {
         "Name": "OnVideoTileAdded",
         "Arguments": \(self.convertVideoTileStateToJson(tileState: tileState))
         }
         """
-        
         
         _eventSink(json)
     }
@@ -37,7 +35,6 @@ public class ChimeVideoTileObserver : VideoTileObserver {
         }
         """
         
-        
         _eventSink(json)
     }
     
@@ -48,8 +45,7 @@ public class ChimeVideoTileObserver : VideoTileObserver {
         "Arguments": \(self.convertVideoTileStateToJson(tileState: tileState))
         }
         """
-        
-        
+
         _eventSink(json)
     }
     
@@ -60,8 +56,7 @@ public class ChimeVideoTileObserver : VideoTileObserver {
         "Arguments": \(self.convertVideoTileStateToJson(tileState: tileState))
         }
         """
-        
-        
+
         _eventSink(json)
     }
     
@@ -72,8 +67,7 @@ public class ChimeVideoTileObserver : VideoTileObserver {
         "Arguments": \(self.convertVideoTileStateToJson(tileState: tileState))
         }
         """
-        
-        
+
         _eventSink(json)
     }
     
@@ -84,7 +78,9 @@ public class ChimeVideoTileObserver : VideoTileObserver {
         "IsContent": \(tileState.isContent),
         "IsLocalTile": \(tileState.isLocalTile),
         "PauseState": "\(tileState.pauseState)",
-        "TileId": \(tileState.tileId)
+        "TileId": \(tileState.tileId),
+        "VideoStreamContentHeight": \(tileState.videoStreamContentHeight),
+        "VideoStreamContentWidth": \(tileState.videoStreamContentWidth)
         }
         """
     }
